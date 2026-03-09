@@ -1,4 +1,4 @@
-package edu.ucla.distefanolab.thyrosim.algorithm;
+package thyrosim.java.edu.ucla.distefanolab.thyrosim.algorithm;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
