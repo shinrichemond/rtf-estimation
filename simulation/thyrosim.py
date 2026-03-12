@@ -79,3 +79,27 @@ class Thyrosim:
         qDot[18] = p.kdelay*(q[17] - q[18])
 
         return qDot
+
+def run_simulation(model, t1, t2, initial_conditions):
+
+    sol = solve_ivp(
+        model.derivatives,
+        (t1, t2),
+        initial_conditions,
+        method="DOP853",
+        rtol=1e-10,
+        atol=1e-10
+    )
+
+    return sol.t, sol.y
+
+def compute_ft4_ft3(states, p):
+
+    q0 = states[0]
+    q3 = states[3]
+
+    ft4 = (p["p7"] + p["p8"]*q0 + p["p9"]*q0**2 + p["p10"]*q0**3) * q0
+
+    ft3 = (p["p24"] + p["p25"]*q0 + p["p26"]*q0**2 + p["p27"]*q0**3) * q3
+
+    return ft4, ft3
