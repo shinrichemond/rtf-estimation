@@ -71,10 +71,6 @@ def create_base_params():
 
 # Scaling stuff
 def apply_patient_scaling(params, height, weight, sex):
-    """
-    Very simplified scaling (placeholder).
-    Replace with real scaling if available.
-    """
 
     scale = (weight / 70.0)
 
@@ -97,7 +93,7 @@ def simulate_patient(
     lt3_dose,
     rtf,
     t_end=200
-):
+    ):
 
     params = create_base_params()
     params = apply_patient_scaling(params, height, weight, sex)
