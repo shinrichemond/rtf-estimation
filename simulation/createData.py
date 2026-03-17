@@ -5,7 +5,7 @@
 import numpy as np
 import pandas as pd
 
-n_samples = 100000
+n_samples = 10000
 
 def sample_clinical_dataset(df, n_samples, window=50):
 
