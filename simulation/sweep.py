@@ -1,4 +1,6 @@
-# Multiprocessing the simulations
+# Multiprocessing the process of sweeping across varying values input values
+# Inputs: Sex, Height, Weight, LT3, LT4, RTF
+# Outputs: FT4, FT3, TT3, TSH
 import numpy as np
 import pandas as pd
 from itertools import product
