@@ -114,7 +114,9 @@ def simulate_patient(
         model.derivatives,
         (0, t_end),
         initial_conditions,
-        method="DOP853"
+        method="DOP853",
+        rtol=1e-4, 
+        atol=1e-4
     )
 
     t = sol.t

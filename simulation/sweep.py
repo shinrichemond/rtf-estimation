@@ -7,16 +7,7 @@ from itertools import product
 from concurrent.futures import ProcessPoolExecutor
 from thyrosim_model import simulate_patient
 from tqdm import tqdm
-
-def compute_means(df, window=50):
-    tail = df.tail(window)
-
-    return {
-        "FT4_mean": tail["FT4"].mean(),
-        "FT3_mean": tail["FT3"].mean(),
-        "TT3_mean": tail["TT3"].mean(),
-        "TSH_mean": tail["TSH"].mean(),
-    }
+import os
 
 def run_single_simulation(args):
     h, w, s, lt4, lt3, rtf = args
@@ -30,27 +21,24 @@ def run_single_simulation(args):
         rtf=rtf
     )
 
-    means = compute_means(df)
+    ft4 = df["FT4"].values[-50:]
+    ft3 = df["FT3"].values[-50:]
+    tt3 = df["TT3"].values[-50:]
+    tsh = df["TSH"].values[-50:]
 
-    return {
-        "height": h,
-        "weight": w,
-        "sex": s,
-        "lt4": lt4,
-        "lt3": lt3,
-        "RTF": rtf,
-        "timeseries": df,
-        **means
-    }
+    return (
+        h, w, s, lt4, lt3, rtf, # df,
+        ft4.mean(), ft3.mean(), tt3.mean(), tsh.mean()
+    )
 
 def generate_full_dataset_parallel():
     # Full sweep
-    heights = list(range(150, 185, 5))
-    weights = list(range(50, 75, 5))
+    heights = range(150, 185, 5)
+    weights = range(50, 75, 5)
     sexes = ["male", "female"]
-    lt4_vals = list(range(25, 55, 5))
-    lt3_vals = list(range(5, 10))
-    rtf_vals = np.linspace(0.0, 1.0, 101)
+    lt4_vals = range(25, 55, 5)
+    lt3_vals = range(5, 10)
+    rtf_vals = np.linspace(0.0, 1.0, 4)
 
     # test sweep
     # heights = [150, 180]
@@ -60,24 +48,40 @@ def generate_full_dataset_parallel():
     # lt3_vals = [5, 10]
     # rtf_vals = np.linspace(0.0, 1.0, 2)
 
-    param_grid = list(product(
+    param_grid = product(
         heights, weights, sexes, lt4_vals, lt3_vals, rtf_vals
-    ))
+    )
 
-    total = len(param_grid)
+    total = len(heights) * len(weights) * len(sexes) * len(lt4_vals) * len(lt3_vals) * len(rtf_vals)
     print(f"Total simulations: {total}")
 
     results = []
 
-    with ProcessPoolExecutor() as executor:
+    columnlist = [
+        "height", "weight", "sex", "lt4", "lt3", "RTF", # "timeseries",
+        "FT4_mean", "FT3_mean", "TT3_mean", "TSH_mean"
+    ]
 
-        for res in tqdm(executor.map(run_single_simulation, param_grid), total=total):
+    output_file = "simulation/thyrosim_staging.csv"
+    pd.DataFrame(columns=columnlist).to_csv(output_file, index=False)
+    batch_size = 10
+    buffer = []
+
+    with ProcessPoolExecutor(max_workers=os.cpu_count()-1) as executor:
+        for res in tqdm(executor.map(run_single_simulation, param_grid, chunksize=1), total=total):
             results.append(res)
 
-    dataset = pd.DataFrame(results)
+            buffer.append(res)
 
-    return dataset
+            # flush periodically
+            if len(buffer) >= batch_size:
+                pd.DataFrame(buffer, columns=columnlist).to_csv(
+                    output_file, mode="a", header=False, index=False
+                )
+                buffer.clear()
+
+    return output_file
 
 if __name__ == "__main__":
     dataset = generate_full_dataset_parallel()
-    dataset.to_pickle("thyrosim_full_dataset.pkl")
+    dataset.to_csv("simulation/thyrosim_cut_dataset.csv", index=False)
