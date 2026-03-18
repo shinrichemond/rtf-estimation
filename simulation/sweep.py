@@ -48,9 +48,9 @@ def generate_full_dataset_parallel():
     heights = list(range(150, 185, 5))
     weights = list(range(50, 75, 5))
     sexes = ["male", "female"]
-    lt4_vals = list(range(25, 50))
+    lt4_vals = list(range(25, 55, 5))
     lt3_vals = list(range(5, 10))
-    rtf_vals = np.linspace(0.0, 1.0, 10)
+    rtf_vals = np.linspace(0.0, 1.0, 101)
 
     # test sweep
     # heights = [150, 180]
