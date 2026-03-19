@@ -9,6 +9,26 @@ from thyrosim_model import simulate_patient
 from tqdm import tqdm
 import os
 
+def load_completed_params(csv_file):
+    df = pd.read_csv(csv_file)
+
+    # float fix
+    df["RTF"]= df["RTF"].round(5)
+
+    return set(zip(
+        df["height"],
+        df["weight"],
+        df["sex"],
+        df["lt4"],
+        df["lt3"],
+        df["RTF"]
+    ))
+
+def get_missing_param_grid(param_grid, completed_set):
+    for params in param_grid:
+        if params not in completed_set:
+            yield params
+
 def run_single_simulation(args):
     h, w, s, lt4, lt3, rtf = args
 
@@ -21,10 +41,14 @@ def run_single_simulation(args):
         rtf=rtf
     )
 
+    # means
     ft4 = df["FT4"].values[-50:]
     ft3 = df["FT3"].values[-50:]
     tt3 = df["TT3"].values[-50:]
     tsh = df["TSH"].values[-50:]
+
+    # float fix
+    rtf = round(rtf, 5)
 
     return (
         h, w, s, lt4, lt3, rtf, # df,
@@ -38,39 +62,48 @@ def generate_full_dataset_parallel():
     sexes = ["male", "female"]
     lt4_vals = range(25, 55, 5)
     lt3_vals = range(5, 10)
-    rtf_vals = np.linspace(0.0, 1.0, 4)
+    rtf_vals = np.linspace(0.0, 1.0, 101)
 
     # test sweep
-    # heights = [150, 180]
-    # weights = [50, 70]
-    # sexes = ["male", "female"]
-    # lt4_vals = [25, 50]
-    # lt3_vals = [5, 10]
-    # rtf_vals = np.linspace(0.0, 1.0, 2)
+    # heights = [180]
+    # weights = [70]
+    # sexes = ["female"]
+    # lt4_vals = range(30, 55, 5)
+    # lt3_vals = range(5, 10)
+    # rtf_vals = np.linspace(0.0, 1.0, 101)
 
-    param_grid = product(
+    param_grid_full = product(
         heights, weights, sexes, lt4_vals, lt3_vals, rtf_vals
     )
 
-    total = len(heights) * len(weights) * len(sexes) * len(lt4_vals) * len(lt3_vals) * len(rtf_vals)
-    print(f"Total simulations: {total}")
+    output_file = "simulation/thyrosim_cut_dataset_v2.csv"
 
-    results = []
+    completed = set()
+    if os.path.exists(output_file):
+        print("Resuming from existing file...")
+        completed = load_completed_params(output_file)
+
+    param_grid = get_missing_param_grid(param_grid_full, completed)
+
+    total = len(heights)*len(weights)*len(sexes)*len(lt4_vals)*len(lt3_vals)*len(rtf_vals)
+    remaining = total - len(completed)
+
+    print(f"Total simulations: {total}")
+    print(f"Already completed: {len(completed)}")
+    print(f"Remaining: {remaining}")
 
     columnlist = [
         "height", "weight", "sex", "lt4", "lt3", "RTF", # "timeseries",
         "FT4_mean", "FT3_mean", "TT3_mean", "TSH_mean"
     ]
 
-    output_file = "simulation/thyrosim_staging.csv"
-    pd.DataFrame(columns=columnlist).to_csv(output_file, index=False)
-    batch_size = 10
+    if not os.path.exists(output_file):
+        pd.DataFrame(columns=columnlist).to_csv(output_file, index=False)
+    batch_size = 10000
     buffer = []
 
     with ProcessPoolExecutor(max_workers=os.cpu_count()-1) as executor:
-        for res in tqdm(executor.map(run_single_simulation, param_grid, chunksize=1), total=total):
-            results.append(res)
-
+        for res in tqdm(executor.map(run_single_simulation, param_grid, chunksize=20), total=remaining):
             buffer.append(res)
 
             # flush periodically
@@ -83,5 +116,5 @@ def generate_full_dataset_parallel():
     return output_file
 
 if __name__ == "__main__":
-    dataset = generate_full_dataset_parallel()
-    dataset.to_csv("simulation/thyrosim_cut_dataset.csv", index=False)
+    generate_full_dataset_parallel()
+
