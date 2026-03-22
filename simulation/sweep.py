@@ -25,9 +25,10 @@ def load_completed_params(csv_file):
     ))
 
 def get_missing_param_grid(param_grid, completed_set):
-    for params in param_grid:
-        if params not in completed_set:
-            yield params
+    for h, w, s, lt4, lt3, rtf in param_grid:
+        rtf = round(rtf, 5) # normalize
+        if (h, w, s, lt4, lt3, rtf) not in completed_set:
+            yield (h, w, s, lt4, lt3, rtf)
 
 def run_single_simulation(args):
     h, w, s, lt4, lt3, rtf = args
@@ -62,7 +63,7 @@ def generate_full_dataset_parallel():
     sexes = ["male", "female"]
     lt4_vals = range(25, 55, 5)
     lt3_vals = range(5, 10)
-    rtf_vals = np.linspace(0.0, 1.0, 101)
+    rtf_vals = np.round(np.linspace(0.0, 1.0, 101), 5)
 
     # test sweep
     # heights = [180]
@@ -99,11 +100,11 @@ def generate_full_dataset_parallel():
 
     if not os.path.exists(output_file):
         pd.DataFrame(columns=columnlist).to_csv(output_file, index=False)
-    batch_size = 10000
+    batch_size = 10
     buffer = []
 
     with ProcessPoolExecutor(max_workers=os.cpu_count()-1) as executor:
-        for res in tqdm(executor.map(run_single_simulation, param_grid, chunksize=20), total=remaining):
+        for res in tqdm(executor.map(run_single_simulation, param_grid, chunksize=1), total=remaining):
             buffer.append(res)
 
             # flush periodically
