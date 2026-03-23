@@ -1,11 +1,11 @@
-# Multiprocessing the process of sweeping across varying values input values
+# Multiprocessing the process of sweeping of running the main pThyrosim model by sweeping across a large combination of input parameters 
 # Inputs: Sex, Height, Weight, LT3, LT4, RTF
 # Outputs: FT4, FT3, TT3, TSH
 import numpy as np
 import pandas as pd
 from itertools import product
 from concurrent.futures import ProcessPoolExecutor
-from thyrosim_model import simulate_patient
+from simulation.pthyrosim_model import simulate_patient
 from tqdm import tqdm
 import os
 
@@ -61,8 +61,8 @@ def generate_full_dataset_parallel():
     heights = range(150, 185, 5)
     weights = range(50, 75, 5)
     sexes = ["male", "female"]
-    lt4_vals = range(25, 55, 5)
-    lt3_vals = range(5, 10)
+    lt4_vals = range(75, 255, 5)
+    lt3_vals = range(5, 21)
     rtf_vals = np.round(np.linspace(0.0, 1.0, 101), 5)
 
     # test sweep
