@@ -22,13 +22,3 @@ Only a subset of the original repository was incorporated for reference purposes
 
 - **ThyroSim Code**  
   Referenced for translating core model equations and logic into Python.
-
-## Purpose of Inclusion
-
-These components were included strictly for:
-
-- Cross-referencing implementation details  
-- Verifying correctness during the porting process  
-- Preserving alignment with the original model design  
-
-They are **not executed as part of the current system** and serve only as a static reference.
